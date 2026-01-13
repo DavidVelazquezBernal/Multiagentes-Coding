@@ -1,22 +1,28 @@
 /**
- * ConfigurationManager implementation using the Singleton pattern.
- * Ensures a single point of access for application-wide settings with thread-safe instantiation logic.
+ * ConfigurationManager implementa el patrón Singleton para la gestión centralizada
+ * de la configuración de la aplicación. Garantiza la integridad total de los datos
+ * recuperados, evitando cualquier transformación de precisión numérica.
+ * 
+ * @version TypeScript 5.0
  */
 export class ConfigurationManager {
-    private static instance: ConfigurationManager;
+    private static instance: ConfigurationManager | null = null;
     private readonly settings: Map<string, any>;
 
     /**
-     * Private constructor to prevent direct instantiation from outside the class.
+     * El constructor es privado para prevenir la instanciación directa
+     * mediante el operador 'new', cumpliendo con el patrón Singleton.
      */
     private constructor() {
         this.settings = new Map<string, any>();
     }
 
     /**
-     * Returns the unique instance of the ConfigurationManager.
-     * In a TypeScript/JavaScript environment, this implementation is safe against 
-     * race conditions due to the single-threaded nature of the event loop.
+     * Obtiene la instancia única de la clase ConfigurationManager.
+     * En el entorno de ejecución de TypeScript (JavaScript), la naturaleza
+     * single-threaded del event loop garantiza la seguridad de este patrón.
+     * 
+     * @returns {ConfigurationManager} Instancia única de la clase.
      */
     public static getInstance(): ConfigurationManager {
         if (!ConfigurationManager.instance) {
@@ -26,32 +32,40 @@ export class ConfigurationManager {
     }
 
     /**
-     * Stores a configuration value associated with a specific key.
-     * @param key - The unique identifier for the configuration setting.
-     * @param value - The value to be stored (can be any type).
-     * @throws Error if the key is invalid.
+     * Almacena un valor en el contenedor de configuración.
+     * 
+     * @param {string} key - Identificador único para la configuración.
+     * @param {any} value - Valor asociado a la clave (soporta cualquier tipo de dato).
+     * @throws {Error} Si la clave proporcionada no es válida.
      */
     public setConfig(key: string, value: any): void {
         if (typeof key !== 'string' || key.trim() === '') {
-            throw new Error("Configuration key must be a non-empty string.");
+            throw new Error("ConfigurationManager.setConfig: La clave 'key' debe ser un string no vacío.");
         }
+        
         this.settings.set(key, value);
     }
 
     /**
-     * Retrieves a configuration value by its key.
-     * If the value is a number, it applies precision rounding to avoid floating point errors.
-     * @param key - The identifier of the configuration to retrieve.
-     * @returns The value associated with the key, or undefined if it does not exist.
+     * Recupera el valor almacenado para una clave específica.
+     * Devuelve el valor original íntegro, sin aplicar redondeos ni
+     * transformaciones de precisión numérica.
+     * 
+     * @param {string} key - Identificador de la configuración a recuperar.
+     * @returns {any} El valor original almacenado o undefined si la clave no existe.
+     * @throws {Error} Si la clave no es un string.
      */
     public getConfig(key: string): any {
-        const value = this.settings.get(key);
-
-        // Precision handling for floating point numbers as per requirements
-        if (typeof value === 'number') {
-            return Math.round(value * 1e10) / 1e10;
+        if (typeof key !== 'string') {
+            throw new Error("ConfigurationManager.getConfig: La clave 'key' debe ser un string.");
         }
 
-        return value;
+        if (!this.settings.has(key)) {
+            return undefined;
+        }
+
+        // Se retorna el valor tal cual fue almacenado para mantener la integridad
+        // de datos de alta precisión según los requerimientos formales.
+        return this.settings.get(key);
     }
 }
