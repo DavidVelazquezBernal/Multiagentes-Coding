@@ -1,22 +1,22 @@
 /**
- * ConfigurationManager implementa el patrón de diseño Singleton para centralizar
- * la gestión de configuración de la aplicación de manera global y segura.
+ * ConfigurationManager implementation using the Singleton pattern.
+ * Ensures a single point of access for application-wide settings with thread-safe instantiation logic.
  */
 export class ConfigurationManager {
     private static instance: ConfigurationManager;
-    private settings: Map<string, any>;
+    private readonly settings: Map<string, any>;
 
     /**
-     * Constructor privado para prevenir la instanciación externa y
-     * garantizar una única instancia global.
+     * Private constructor to prevent direct instantiation from outside the class.
      */
     private constructor() {
         this.settings = new Map<string, any>();
     }
 
     /**
-     * Obtiene la instancia única de ConfigurationManager.
-     * @returns {ConfigurationManager} La instancia global.
+     * Returns the unique instance of the ConfigurationManager.
+     * In a TypeScript/JavaScript environment, this implementation is safe against 
+     * race conditions due to the single-threaded nature of the event loop.
      */
     public static getInstance(): ConfigurationManager {
         if (!ConfigurationManager.instance) {
@@ -26,36 +26,32 @@ export class ConfigurationManager {
     }
 
     /**
-     * Recupera un valor de configuración asociado a una clave.
-     * @param {string} key - La clave del parámetro de configuración.
-     * @returns {any} El valor asociado a la clave o undefined si no existe.
-     * @throws {Error} Si la clave no es una cadena válida.
+     * Stores a configuration value associated with a specific key.
+     * @param key - The unique identifier for the configuration setting.
+     * @param value - The value to be stored (can be any type).
+     * @throws Error if the key is invalid.
      */
-    public get(key: string): any {
+    public setConfig(key: string, value: any): void {
         if (typeof key !== 'string' || key.trim() === '') {
-            throw new Error("La clave de configuración debe ser un string válido.");
+            throw new Error("Configuration key must be a non-empty string.");
         }
-        return this.settings.get(key);
+        this.settings.set(key, value);
     }
 
     /**
-     * Establece o actualiza un valor de configuración.
-     * @param {string} key - La clave del parámetro de configuración.
-     * @param {any} value - El valor a almacenar.
-     * @throws {Error} Si la clave no es válida.
+     * Retrieves a configuration value by its key.
+     * If the value is a number, it applies precision rounding to avoid floating point errors.
+     * @param key - The identifier of the configuration to retrieve.
+     * @returns The value associated with the key, or undefined if it does not exist.
      */
-    public set(key: string, value: any): void {
-        if (typeof key !== 'string' || key.trim() === '') {
-            throw new Error("La clave de configuración debe ser un string válido.");
+    public getConfig(key: string): any {
+        const value = this.settings.get(key);
+
+        // Precision handling for floating point numbers as per requirements
+        if (typeof value === 'number') {
+            return Math.round(value * 1e10) / 1e10;
         }
 
-        let valueToStore = value;
-
-        // Requisito de manejo de precisión numérica para TypeScript
-        if (typeof value === 'number' && !Number.isInteger(value)) {
-            valueToStore = Math.round(value * 1e10) / 1e10;
-        }
-
-        this.settings.set(key, valueToStore);
+        return value;
     }
 }
