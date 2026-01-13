@@ -1,92 +1,71 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, vi } from 'vitest';
 import { ConfigurationManager } from './class_configuration_manager_private_static_instanc';
 
 describe('ConfigurationManager', () => {
   beforeEach(() => {
-    // Arrange - Reset the Singleton instance before each test to ensure isolation and 100% coverage
-    // @ts-ignore - Accessing private property for testing purposes
-    ConfigurationManager.instance = undefined;
+    // Arrange - Reset Singleton instance for isolation using reflection
+    (ConfigurationManager as any).instance = undefined;
   });
 
-  it('should return the same instance when getInstance is called multiple times', () => {
-    // Arrange & Act
+  it('should implement the Singleton pattern returning the same instance', () => {
+    // Arrange
     const instance1 = ConfigurationManager.getInstance();
+
+    // Act
     const instance2 = ConfigurationManager.getInstance();
 
     // Assert
     expect(instance1).toBe(instance2);
-    expect(instance1).toBeInstanceOf(ConfigurationManager);
   });
 
-  it('should store and retrieve various data types correctly', () => {
-    // Arrange
-    const manager = ConfigurationManager.getInstance();
-    const stringKey = 'app_name';
-    const stringValue = 'MyApp';
-    const objectKey = 'metadata';
-    const objectValue = { version: '1.0.0', env: 'prod' };
-
-    // Act
-    manager.setConfig(stringKey, stringValue);
-    manager.setConfig(objectKey, objectValue);
-    const retrievedString = manager.getConfig(stringKey);
-    const retrievedObject = manager.getConfig(objectKey);
-
-    // Assert
-    expect(retrievedString).toBe(stringValue);
-    expect(retrievedObject).toEqual(objectValue);
-  });
-
-  it('should apply precision rounding to numeric values', () => {
-    // Arrange
-    const manager = ConfigurationManager.getInstance();
-    const key = 'float_val';
-    const input = 0.1 + 0.2; // Result: 0.3
-
-    // Act
-    manager.setConfig(key, input);
-    const result = manager.getConfig(key);
-
-    // Assert
-    expect(result).toBeCloseTo(0.3);
-  });
-
-  it('should return undefined when retrieving a non-existent key', () => {
+  test.each([
+    { description: 'store string values', key: 'env', value: 'production', expectedResult: 'production' },
+    { description: 'store integer values', key: 'port', value: 3000, expectedResult: 3000 },
+    { description: 'store boolean values', key: 'active', value: true, expectedResult: true },
+    { description: 'store object values', key: 'db', value: { host: 'localhost' }, expectedResult: { host: 'localhost' } },
+    { description: 'return undefined for non-existent keys', key: 'unknown', value: null, expectedResult: undefined }
+  ])('$description', ({ key, value, expectedResult }: { description: string; key: string; value: any; expectedResult: any }) => {
     // Arrange
     const manager = ConfigurationManager.getInstance();
 
     // Act
-    const result = manager.getConfig('missing_key');
+    if (value !== null) {
+      manager.set(key, value);
+    }
+    const result = manager.get(key);
 
     // Assert
-    expect(result).toBeUndefined();
+    if (typeof expectedResult === 'object' && expectedResult !== null) {
+      expect(result).toEqual(expectedResult);
+    } else {
+      expect(result).toBe(expectedResult);
+    }
   });
 
-  it.each([
-    { description: 'empty string', key: '' },
-    { description: 'whitespace only', key: '   ' },
-    { description: 'non-string type', key: 123 as any },
-    { description: 'null value', key: null as any },
-  ])('should throw an error when setConfig key is $description', ({ key }: { description: string; key: string }) => {
+  it('should handle floating point precision rounding', () => {
     // Arrange
     const manager = ConfigurationManager.getInstance();
+    const preciseValue = 1.23456;
+
+    // Act
+    manager.set('version', preciseValue);
+    const result = manager.get('version');
+
+    // Assert
+    expect(result).toBeCloseTo(1.23456);
+  });
+
+  test.each([
+    { description: 'an empty string', key: '' },
+    { description: 'only whitespace', key: '   ' },
+    { description: 'a non-string type', key: 555 as unknown as string }
+  ])('should throw error when key is $description', ({ key }: { description: string; key: string }) => {
+    // Arrange
+    const manager = ConfigurationManager.getInstance();
+    const expectedError = 'La clave (key) debe ser un string no vacío.';
 
     // Act & Assert
-    expect(() => manager.setConfig(key, 'some_value')).toThrow("Configuration key must be a non-empty string.");
-  });
-
-  it('should handle large numbers and preserve precision up to 10 decimal places', () => {
-    // Arrange
-    const manager = ConfigurationManager.getInstance();
-    const key = 'precise_num';
-    const input = 1.23457;
-    const expected = 1.23457;
-
-    // Act
-    manager.setConfig(key, input);
-    const result = manager.getConfig(key);
-
-    // Assert
-    expect(result).toBeCloseTo(expected);
+    expect(() => manager.get(key)).toThrow(expectedError);
+    expect(() => manager.set(key, 'someValue')).toThrow(expectedError);
   });
 });
