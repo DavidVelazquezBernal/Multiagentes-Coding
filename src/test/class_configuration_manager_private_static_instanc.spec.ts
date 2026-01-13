@@ -2,82 +2,74 @@ import { describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll,
 import { ConfigurationManager } from './class_configuration_manager_private_static_instanc';
 
 describe('ConfigurationManager', () => {
+  let manager: ConfigurationManager;
+
   beforeEach(() => {
-    // Arrange - Reset Singleton instance for test isolation using reflection
-    (ConfigurationManager as any).instance = null;
+    // Arrange: Get instance and clear internal state using reflection to ensure test isolation
+    manager = ConfigurationManager.getInstance();
+    (manager as any).settings.clear();
   });
 
-  it('should implement the Singleton pattern providing the same instance', () => {
+  it('should ensure getInstance returns the same singleton instance', () => {
     // Arrange
     const instance1 = ConfigurationManager.getInstance();
-
-    // Act
     const instance2 = ConfigurationManager.getInstance();
 
-    // Assert
+    // Act & Assert
     expect(instance1).toBe(instance2);
-    expect(instance1).toBeInstanceOf(ConfigurationManager);
   });
 
   test.each([
-    { description: 'store and retrieve a string value', key: 'env', value: 'production', expectedResult: 'production' },
-    { description: 'store and retrieve a boolean value', key: 'enabled', value: true, expectedResult: true },
-    { description: 'store and retrieve an object value', key: 'db', value: { port: 5432 }, expectedResult: { port: 5432 } },
-    { description: 'return undefined for a non-existent key', key: 'missing', value: undefined, expectedResult: undefined },
-  ])('$description', ({ key, value, expectedResult }: { description: string; key: string; value: any; expectedResult: any }) => {
+    { description: 'empty string', key: '' },
+    { description: 'whitespace string', key: '   ' },
+    { description: 'non-string type', key: 123 as any },
+  ])('should throw error when key is $description', ({ key }: { description: string; key: string }) => {
     // Arrange
-    const manager = ConfigurationManager.getInstance();
+    const expectedError = "La clave de configuración debe ser un string válido.";
+
+    // Act & Assert
+    expect(() => manager.set(key, 'value')).toThrow(expectedError);
+    expect(() => manager.get(key)).toThrow(expectedError);
+  });
+
+  test.each([
+    { description: 'a string', value: 'production' },
+    { description: 'an object', value: { port: 8080 } },
+    { description: 'null', value: null },
+    { description: 'zero', value: 0 },
+  ])('should store and retrieve $description correctly', ({ value }: { description: string; value: any }) => {
+    // Arrange
+    const key = 'settingKey';
 
     // Act
-    if (value !== undefined) {
-      manager.set(key, value);
-    }
+    manager.set(key, value);
     const result = manager.get(key);
 
     // Assert
-    if (typeof expectedResult === 'object' && expectedResult !== null) {
-      expect(result).toEqual(expectedResult);
-    } else {
-      expect(result).toBe(expectedResult);
-    }
+    expect(result).toEqual(value);
   });
 
-  it('should round numeric values to 10 decimal places and maintain precision', () => {
+  it('should handle numeric precision for floating point numbers', () => {
     // Arrange
-    const manager = ConfigurationManager.getInstance();
-    const highPrecisionValue = 3.14159;
-    const expectedLiteral = 3.14159;
+    const key = 'version';
+    const value = 1.12345;
 
     // Act
-    manager.set('pi', highPrecisionValue);
-    const result = manager.get('pi');
+    manager.set(key, value);
+    const result = manager.get(key);
 
     // Assert
-    expect(result).toBeCloseTo(expectedLiteral);
+    expect(result).toBeCloseTo(1.12345);
   });
 
-  it('should handle zero value correctly without sign issues', () => {
+  it('should return undefined when retrieving a non-existent key', () => {
     // Arrange
-    const manager = ConfigurationManager.getInstance();
+    const key = 'nonExistent';
 
     // Act
-    manager.set('offset', 0);
-    const result = manager.get('offset');
+    const result = manager.get(key);
 
     // Assert
-    expect(result).toBe(0);
-  });
-
-  test.each([
-    { description: 'an empty string', key: '' },
-    { description: 'a whitespace string', key: '   ' },
-    { description: 'a non-string type', key: 123 as any },
-  ])('should throw error when the key is $description', ({ key }: { description: string; key: string }) => {
-    // Arrange
-    const manager = ConfigurationManager.getInstance();
-
-    // Act & Assert
-    expect(() => manager.get(key)).toThrow('ConfigurationManager: La clave proporcionada debe ser un string no vacío.');
-    expect(() => manager.set(key, 'value')).toThrow('ConfigurationManager: La clave proporcionada debe ser un string no vacío.');
+    expect(result).toBeUndefined();
   });
 });
