@@ -1,31 +1,29 @@
 /**
- * Calcula la suma total de un arreglo de números y devuelve una cadena descriptiva.
- * Implementa redondeo de precisión para evitar errores de punto flotante.
+ * Suma todos los elementos de un arreglo numérico y retorna una cadena de texto descriptiva.
  * 
- * @param numbers - Arreglo de valores numéricos a sumar.
- * @returns Cadena de texto con el formato 'La suma total es: X'.
- * @throws Error si el parámetro de entrada no es un arreglo.
+ * @param numbers - Un arreglo de números (number[]).
+ * @returns Una cadena de texto con el formato 'The total sum is [valor]'.
+ * @throws Error si la entrada no es un arreglo o contiene elementos que no son números.
  */
 export function sumNumbersToString(numbers: number[]): string {
-    // Validación básica de entrada
-    if (!Array.isArray(numbers)) {
-        throw new Error("El parámetro 'numbers' debe ser un arreglo de tipo number[].");
+  // Validación de entrada para asegurar que sea un arreglo
+  if (!Array.isArray(numbers)) {
+    throw new Error("Input must be an array of numbers.");
+  }
+
+  // Cálculo de la suma utilizando reduce
+  const total: number = numbers.reduce((accumulator: number, current: number) => {
+    // Validación básica de tipo para cada elemento del arreglo
+    if (typeof current !== 'number' || isNaN(current)) {
+      throw new Error("All elements in the array must be valid numbers.");
     }
+    return accumulator + current;
+  }, 0);
 
-    // Cálculo de la suma utilizando reduce
-    const totalSum: number = numbers.reduce((accumulator: number, current: number) => {
-        // Verificación de que cada elemento sea un número válido
-        if (typeof current !== 'number' || isNaN(current)) {
-            throw new Error("El arreglo contiene valores que no son números válidos.");
-        }
-        return accumulator + current;
-    }, 0);
+  // Manejo de precisión numérica para evitar errores de punto flotante
+  // Se aplica el redondeo solicitado: Math.round(resultado * 1e10) / 1e10
+  const correctedTotal: number = Math.round(total * 1e10) / 1e10;
 
-    /**
-     * Requisito de precisión numérica para TypeScript:
-     * Se aplica redondeo para evitar errores de precisión binaria en punto flotante.
-     */
-    const roundedResult: number = Math.round(totalSum * 1e10) / 1e10;
-
-    return `La suma total es: ${roundedResult}`;
+  // Retorno de la cadena con el formato especificado
+  return `The total sum is ${correctedTotal}`;
 }
